@@ -15,7 +15,8 @@ class Navigation {
 public:
     Navigation(int window_size, float acc_thresh,
                float acc_p_noise, float acc_m_noise,
-               float gyro_p_noise, float gyro_m_noise);
+               float gyro_p_noise, float gyro_m_noise,
+               float v_x0, float v_y0, float v_z0);
     void process_reading(float ax, float ay, float az, float gx, float gy, float gz, float dt);
     std::vector<Vector> get_trajectory() const;
 

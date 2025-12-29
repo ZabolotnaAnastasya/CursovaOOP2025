@@ -7,15 +7,16 @@
 
 Navigation::Navigation(int window_size, float acc_thresh,
                        float acc_p_noise, float acc_m_noise,
-                       float gyro_p_noise, float gyro_m_noise):
+                       float gyro_p_noise, float gyro_m_noise,
+                       float v_x0, float v_y0, float v_z0):
     kf_accel(acc_p_noise, acc_m_noise),
     kf_gyro(gyro_p_noise, gyro_m_noise),
     orientation(1.0f, 0.0f, 0.0f, 0.0f),
     zupt_window_size(window_size),
     acceleration_threshold(acc_thresh)
 {
-    velocity = Vector(0, 0, 0);
-    position = Vector(0, 0, 0);
+    velocity = Vector(v_x0, v_y0, v_z0);
+    prev_velocity = Vector(v_x0, v_y0, v_z0);
 
     prev_accel_global = Vector(0, 0, 0);
     prev_velocity = Vector(0, 0, 0);
@@ -82,7 +83,6 @@ void Navigation::process_reading(float ax, float ay, float az, float gx, float g
     // інтеграл
     if (is_stationary()) {
         velocity = Vector(0, 0, 0);
-        // Коли стоїмо, прискорення теж обнуляємо, щоб не накопичувати дрейф
         prev_accel_global = Vector(0,0,0);
     } else {
         Vector delta_v = (world_accel + prev_accel_global) * (0.5f * dt);
