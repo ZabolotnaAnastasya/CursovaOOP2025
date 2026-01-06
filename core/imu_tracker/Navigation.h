@@ -1,7 +1,6 @@
 //
 // Created by Anastasiia Zabolotna on 15.11.2025.
 //
-
 #ifndef NAVIGATION_H
 #define NAVIGATION_H
 
@@ -17,7 +16,9 @@ public:
                float acc_p_noise, float acc_m_noise,
                float gyro_p_noise, float gyro_m_noise,
                float v_x0, float v_y0, float v_z0);
+
     void process_reading(float ax, float ay, float az, float gx, float gy, float gz, float dt);
+
     std::vector<Vector> get_trajectory() const;
 
 private:
@@ -31,11 +32,14 @@ private:
     Vector prev_accel_global;
     Vector prev_velocity;
     Vector prev_gyro;
+
     bool first_run = true;
+    int iteration_count = 0;
 
     std::deque<Vector> accel_history;
     int zupt_window_size;
     float acceleration_threshold;
+
     std::vector<Vector> trajectory;
 
     bool is_stationary();

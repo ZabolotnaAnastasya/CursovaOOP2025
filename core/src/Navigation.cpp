@@ -8,26 +8,27 @@
 Navigation::Navigation(int window_size, float acc_thresh,
                        float acc_p_noise, float acc_m_noise,
                        float gyro_p_noise, float gyro_m_noise,
-                       float v_x0, float v_y0, float v_z0):
-    kf_accel(acc_p_noise, acc_m_noise),
-    kf_gyro(gyro_p_noise, gyro_m_noise),
-    orientation(1.0f, 0.0f, 0.0f, 0.0f),
-    zupt_window_size(window_size),
-    acceleration_threshold(acc_thresh)
+                       float v_x0, float v_y0, float v_z0) :
+        kf_accel(acc_p_noise, acc_m_noise),
+        kf_gyro(gyro_p_noise, gyro_m_noise),
+        orientation(1.0f, 0.0f, 0.0f, 0.0f),
+        zupt_window_size(window_size),
+        acceleration_threshold(acc_thresh)
 {
     velocity = Vector(v_x0, v_y0, v_z0);
     prev_velocity = Vector(v_x0, v_y0, v_z0);
 
+    position = Vector(0, 0, 0);
     prev_accel_global = Vector(0, 0, 0);
-    prev_velocity = Vector(0, 0, 0);
     prev_gyro = Vector(0, 0, 0);
+
+    iteration_count = 0;
+    trajectory.push_back(position);
 }
 
-// ZUPT
 bool Navigation::is_stationary() {
     if (accel_history.size() < zupt_window_size) return false;
 
-    // середнє
     float sum = 0.0f;
     for (const auto& v : accel_history) {
         float mag = std::sqrt(v.getX()*v.getX() + v.getY()*v.getY() + v.getZ()*v.getZ());
@@ -35,7 +36,6 @@ bool Navigation::is_stationary() {
     }
     float mean = sum / accel_history.size();
 
-    // дисперсія
     float variance = 0.0f;
     for (const auto& v : accel_history) {
         float mag = std::sqrt(v.getX()*v.getX() + v.getY()*v.getY() + v.getZ()*v.getZ());
@@ -47,15 +47,16 @@ bool Navigation::is_stationary() {
     return variance < acceleration_threshold;
 }
 
-
 void Navigation::process_reading(float ax, float ay, float az, float gx, float gy, float gz, float dt) {
+    iteration_count++;
+
     Vector raw_accel(ax, ay, az);
     Vector raw_gyro(gx, gy, gz);
 
     Vector accel_vec = kf_accel.update(raw_accel);
-    Vector gyro_vec  = kf_gyro.update(raw_gyro);
+    Vector gyro_vec = kf_gyro.update(raw_gyro);
 
-    // історія для ZUPT
+    // історія ZUPT
     accel_history.push_back(accel_vec);
     if (accel_history.size() > zupt_window_size) {
         accel_history.pop_front();
@@ -63,38 +64,33 @@ void Navigation::process_reading(float ax, float ay, float az, float gx, float g
 
     if (first_run) {
         prev_gyro = gyro_vec;
-
         orientation.updateFromGyro(gyro_vec, dt);
-        Vector world_accel = orientation.rotate(accel_vec);
 
+        Vector world_accel = orientation.rotate(accel_vec);
         prev_accel_global = world_accel;
-        prev_velocity = Vector(0, 0, 0);
 
         first_run = false;
         return;
     }
 
-    // оновлення орієнтації
     orientation.updateFromGyro(gyro_vec, prev_gyro, dt);
 
-    // у світ коорд
     Vector world_accel = orientation.rotate(accel_vec);
+    // ZUPT
 
-    // інтеграл
-    if (is_stationary()) {
+    if (is_stationary() && iteration_count > zupt_window_size) {
         velocity = Vector(0, 0, 0);
-        prev_accel_global = Vector(0,0,0);
     } else {
+        // інтеграл
+
         Vector delta_v = (world_accel + prev_accel_global) * (0.5f * dt);
         velocity = velocity + delta_v;
 
         Vector delta_p = (velocity + prev_velocity) * (0.5f * dt);
         position = position + delta_p;
-
-        prev_accel_global = world_accel;
     }
 
-    // оновлення історії
+    prev_accel_global = world_accel;
     prev_gyro = gyro_vec;
     prev_velocity = velocity;
 
