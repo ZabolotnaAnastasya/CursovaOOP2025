@@ -6,7 +6,7 @@
 
 Vector::Vector(float x, float y, float z) : vec(x, y, z) {}
 
-// Конструктор для внутр
+// конструктор для внутр
 Vector::Vector(const Eigen::Vector3f& v) : vec(v) {}
 
 void Vector::setV(float x, float y, float z) {

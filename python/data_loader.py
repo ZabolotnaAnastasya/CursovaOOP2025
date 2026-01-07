@@ -19,7 +19,7 @@ class DataLoader:
                 return ""
             end try
             """
-            # Запуск окремого процесу (не конфліктує з Matplotlib)
+            # запуск окремого процесу
             byte_output = subprocess.check_output(['osascript', '-e', script])
             path = byte_output.decode('utf-8').strip()
 
@@ -32,9 +32,8 @@ class DataLoader:
             return False
 
     def load(self):
-        """Парсить CSV файл у DataFrame"""
+        # парсить CSV файл у DataFrame
         if not self.file_path or not os.path.exists(self.file_path):
-            # Якщо шлях порожній, не спамимо помилкою, просто повертаємо False
             if self.file_path:
                 print(f"Файл не знайдено: {self.file_path}")
             return False
@@ -42,7 +41,7 @@ class DataLoader:
         try:
             data = pd.read_csv(self.file_path, header=None)
 
-            # Логіка визначення формату даних
+            # логіка визначення формату даних
             cols = len(data.columns)
             if cols == 8:
                 # [time_a, ax, ay, az, time_g, gx, gy, gz]
